@@ -353,7 +353,7 @@ const CardModal: React.FC<CardModalProps> = ({ onClose, onSubmit, userId, initia
       saveToGallery: true,
       mediaType: mediaAction ? 'record' : 'upload',
       thumbnail: effectiveThumbnail,
-      mediaUrl: capturedMedia || undefined, // FIX: Explicitly undefined if null
+      mediaUrl: capturedMedia ? capturedMedia : undefined, 
       createdAt: Date.now(),
       defaultWidth: defaultWidth,
       layoutStyle: layoutStyle,
@@ -399,7 +399,6 @@ const CardModal: React.FC<CardModalProps> = ({ onClose, onSubmit, userId, initia
     handleStopCapture();
   };
 
-  // Build Preview Object
   const previewCard: MediaCard = {
     id: 'preview',
     type,
@@ -453,8 +452,6 @@ const CardModal: React.FC<CardModalProps> = ({ onClose, onSubmit, userId, initia
         </div>
 
         <div className="flex-1 overflow-y-auto scrollbar-hide p-8">
-          
-          {/* --- TAB: SIMPLIFICA --- */}
           {activeTab === 'simple' && (
             <div className="flex flex-col items-center justify-center h-full space-y-8 animate-in fade-in zoom-in-95">
                <div className="text-center space-y-2">
@@ -466,10 +463,7 @@ const CardModal: React.FC<CardModalProps> = ({ onClose, onSubmit, userId, initia
                     <div className="p-6 rounded-full bg-emerald-500 text-white shadow-xl group-hover:scale-110 transition-transform">
                       <Upload size={48} />
                     </div>
-                    <div className="text-center">
-                      <span className="text-sm font-black uppercase tracking-widest text-emerald-500 block">Upload Universal</span>
-                      <span className="text-[10px] font-bold text-slate-500 mt-2 block opacity-70">MP3 • JPG • MP4</span>
-                    </div>
+                    <span className="text-sm font-black uppercase tracking-widest text-emerald-500 block">Upload Universal</span>
                  </button>
                </div>
                <button onClick={() => setShowSettings(true)} className="flex items-center gap-2 px-6 py-3 rounded-full bg-slate-800 text-slate-400 text-[10px] font-black uppercase hover:bg-slate-700 transition-all">
@@ -479,74 +473,55 @@ const CardModal: React.FC<CardModalProps> = ({ onClose, onSubmit, userId, initia
             </div>
           )}
 
-          {/* --- TAB: MEUS CARDS --- */}
           {activeTab === 'library' && (
             <div className="space-y-6">
-               <div className="flex justify-between items-center">
-                 <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest">Gerenciar Conteúdo</h3>
-                 <button onClick={fetchMyCards} className="p-2 hover:bg-slate-800 rounded-full text-slate-500"><RefreshCw size={16} /></button>
-               </div>
-               {loadingCards ? (
-                 <div className="text-center py-20 text-slate-500 text-xs font-bold uppercase animate-pulse">Carregando...</div>
-               ) : myCards.length === 0 ? (
-                 <div className="text-center py-20 text-slate-500 text-xs font-bold uppercase">Nenhum card criado ainda.</div>
-               ) : (
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <div className="flex justify-between items-center"><button onClick={fetchMyCards} className="p-2 bg-slate-800 rounded-full text-white"><RefreshCw size={16}/></button></div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    {myCards.map(card => (
-                     <div key={card.id} className="p-4 bg-slate-800/40 border border-slate-700/50 rounded-2xl flex gap-4 items-center group">
-                        <div className="w-16 h-16 rounded-xl bg-black overflow-hidden relative">
-                           <img src={card.thumbnail} className="w-full h-full object-cover opacity-60" />
-                           <div className="absolute inset-0 flex items-center justify-center text-white">{card.type === CardType.VIDEO ? <PlayCircle size={20} /> : <ImageIcon size={20} />}</div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                           <h4 className="text-white font-bold text-sm truncate">{card.title}</h4>
-                           <p className="text-slate-500 text-xs truncate">{card.group || 'Geral'} • {card.creditCost}cr</p>
-                        </div>
-                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                           <button onClick={() => handleEditCard(card)} className="p-2 bg-blue-600/20 text-blue-500 rounded-lg hover:bg-blue-600 hover:text-white"><Edit size={16} /></button>
-                           <button onClick={() => handleDeleteCard(card.id)} className="p-2 bg-red-600/20 text-red-500 rounded-lg hover:bg-red-600 hover:text-white"><Trash2 size={16} /></button>
-                        </div>
+                     <div key={card.id} className="p-4 bg-slate-800/40 rounded-2xl flex gap-4 items-center">
+                        <div className="w-16 h-16 bg-black rounded-xl overflow-hidden"><img src={card.thumbnail} className="w-full h-full object-cover opacity-60" /></div>
+                        <div className="flex-1 min-w-0"><h4 className="text-white text-sm font-bold truncate">{card.title}</h4></div>
+                        <button onClick={() => handleDeleteCard(card.id)} className="p-2 bg-red-600/20 text-red-500 rounded-lg"><Trash2 size={16} /></button>
                      </div>
                    ))}
-                 </div>
-               )}
+               </div>
             </div>
           )}
 
-          {/* --- TAB: AVANÇADO (COM PREVIEW) --- */}
           {activeTab === 'create' && (
             <div className="flex flex-col lg:flex-row gap-8 h-full">
-              {/* Form Section */}
               <div className="flex-1 overflow-y-auto scrollbar-hide pr-2">
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* ... (Existing Form Fields kept same) ... */}
-                  <div className="space-y-2"><label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Tipo</label><div className="grid grid-cols-4 gap-2">{cardTypes.map(ct => (<button key={ct.id} type="button" onClick={() => { setType(ct.id); resetMedia(); }} className={`flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border transition-all ${type === ct.id ? 'bg-blue-600 border-blue-400 text-white' : 'bg-slate-800/40 border-slate-700/50 text-slate-500 hover:border-slate-500'}`}>{ct.icon}<span className="text-[8px] font-black uppercase tracking-widest">{ct.label}</span></button>))}</div></div>
+                  <div className="space-y-2"><label className="text-[10px] font-black text-slate-500 uppercase">Tipo</label><div className="grid grid-cols-4 gap-2">{cardTypes.map(ct => (<button key={ct.id} type="button" onClick={() => setType(ct.id)} className={`p-3 rounded-2xl border ${type === ct.id ? 'bg-blue-600 border-blue-400' : 'bg-slate-800/40 border-slate-700'}`}>{ct.icon}</button>))}</div></div>
                   
-                  {/* Media Buttons */}
-                  <div className="space-y-2"><label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Mídia</label><div className="grid grid-cols-4 gap-2">
-                        <button type="button" onClick={() => fileInputRef.current?.click()} className="h-16 rounded-xl border-2 border-dashed border-slate-700 hover:border-blue-500/50 hover:bg-blue-500/5 flex flex-col items-center justify-center gap-1 transition-all"><Upload size={16} /><span className="text-[8px] font-black uppercase">Upload</span></button>
-                        <button type="button" onClick={() => { setMediaAction('audio_rec'); setType(CardType.AUDIO); handleStartCapture('audio'); }} className={`h-16 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 ${mediaAction === 'audio_rec' ? 'border-red-500 bg-red-500/10' : 'border-slate-700 hover:border-red-500/5'}`}><Mic size={16} /><span className="text-[8px] font-black uppercase">Áudio</span></button>
-                        <button type="button" onClick={() => { setMediaAction('video_rec'); setType(CardType.VIDEO); handleStartCapture('video'); }} className={`h-16 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 ${mediaAction === 'video_rec' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 hover:border-blue-500/5'}`}><Video size={16} /><span className="text-[8px] font-black uppercase">Vídeo</span></button>
-                        <button type="button" onClick={() => { setMediaAction('photo_cap'); setType(CardType.IMAGE); handleStartCapture('photo'); }} className={`h-16 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 ${mediaAction === 'photo_cap' ? 'border-purple-500 bg-purple-500/10' : 'border-slate-700 hover:border-purple-500/5'}`}><Camera size={16} /><span className="text-[8px] font-black uppercase">Foto</span></button>
-                        <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
-                  </div>
-                  {mediaAction && (<div className={`relative bg-black rounded-2xl overflow-hidden border border-slate-700 flex items-center justify-center mt-4 transition-all ${isRecording || !capturedMedia ? 'aspect-video h-48' : 'aspect-auto h-auto min-h-[12rem] bg-slate-900'}`}>{stream && (<video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />)}{stream && isRecording && (<div className="absolute top-4 left-4 bg-black/60 px-3 py-1 rounded-full flex items-center gap-2 backdrop-blur-md"><div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" /><span className="text-white font-mono font-black text-xs">{formatTime(recordingTime)}</span></div>)}{capturedMedia && !stream && (<div className="w-full p-2 flex flex-col gap-2">{type === CardType.VIDEO ? (<video src={capturedMedia} controls className="w-full rounded-xl max-h-60 bg-black" />) : type === CardType.AUDIO ? (<div className="w-full p-4 bg-slate-800 rounded-xl flex items-center justify-center"><audio src={capturedMedia} controls className="w-full" /></div>) : (<img src={capturedMedia} className="w-full rounded-xl object-contain max-h-60" />)}</div>)}<div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">{stream && mediaAction === 'photo_cap' && (<button type="button" onClick={handleTakePhoto} className="w-14 h-14 rounded-full border-4 border-white flex items-center justify-center bg-white/20 hover:bg-white/40 transition-all"><div className="w-10 h-10 bg-white rounded-full" /></button>)}{stream && (mediaAction === 'video_rec' || mediaAction === 'audio_rec') && !isRecording && (<button type="button" onClick={() => {}} className="px-6 py-2 bg-red-600 text-white rounded-full text-xs font-black uppercase tracking-widest hover:bg-red-500 shadow-lg">Iniciar</button>)}{isRecording && (<button type="button" onClick={handleStopCapture} className="w-14 h-14 rounded-full border-4 border-red-500/50 flex items-center justify-center bg-red-600 hover:bg-red-700 transition-all shadow-xl"><div className="w-6 h-6 bg-white rounded-sm" /></button>)}</div><button type="button" onClick={resetMedia} className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full text-white hover:bg-red-600 transition-colors z-20"><X size={14} /></button></div>)}</div>
-
-                  <div className="space-y-4">
-                     <div className="flex items-center gap-4"><button type="button" onClick={() => thumbInputRef.current?.click()} className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-slate-700 hover:bg-slate-800 transition-all group flex-1"><div className="w-10 h-10 rounded-lg bg-slate-800 overflow-hidden relative border border-slate-600 group-hover:border-slate-500">{customThumbnail ? (<img src={customThumbnail} className="w-full h-full object-cover" />) : (<div className="w-full h-full flex items-center justify-center text-slate-500"><ImageIcon size={16} /></div>)}</div><div className="text-left"><span className="text-[9px] font-black uppercase text-slate-400 block group-hover:text-white">Thumbnail</span></div></button><input type="file" ref={thumbInputRef} onChange={handleThumbUpload} className="hidden" accept="image/*" /></div>
-                     
-                     <div className="grid grid-cols-2 gap-2"><input placeholder="Grupo" value={group} onChange={e => setGroup(e.target.value)} className="w-full bg-slate-800/40 border border-slate-700/50 rounded-xl p-2 text-xs text-white outline-none" /><input placeholder="Tags" value={tags} onChange={e => setTags(e.target.value)} className="w-full bg-slate-800/40 border border-slate-700/50 rounded-xl p-2 text-xs text-white outline-none" /></div>
-                     <div className="space-y-1"><div className="flex justify-between text-[9px] font-black uppercase text-slate-500"><span>Blur: {blurLevel}%</span></div><input type="range" min="0" max="100" value={blurLevel} onChange={e => setBlurLevel(parseInt(e.target.value))} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer" /></div>
+                  <div className="grid grid-cols-4 gap-2">
+                      <button type="button" onClick={() => fileInputRef.current?.click()} className="h-16 rounded-xl border-2 border-dashed border-slate-700 flex flex-col items-center justify-center"><Upload size={16} /><span className="text-[8px] uppercase">Upload</span></button>
+                      <button type="button" onClick={() => { setMediaAction('audio_rec'); setType(CardType.AUDIO); handleStartCapture('audio'); }} className="h-16 rounded-xl border-2 border-dashed border-slate-700 flex flex-col items-center justify-center"><Mic size={16} /><span className="text-[8px] uppercase">Audio</span></button>
+                      <button type="button" onClick={() => { setMediaAction('video_rec'); setType(CardType.VIDEO); handleStartCapture('video'); }} className="h-16 rounded-xl border-2 border-dashed border-slate-700 flex flex-col items-center justify-center"><Video size={16} /><span className="text-[8px] uppercase">Video</span></button>
+                      <button type="button" onClick={() => { setMediaAction('photo_cap'); setType(CardType.IMAGE); handleStartCapture('photo'); }} className="h-16 rounded-xl border-2 border-dashed border-slate-700 flex flex-col items-center justify-center"><Camera size={16} /><span className="text-[8px] uppercase">Foto</span></button>
+                      <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
                   </div>
 
+                  {mediaAction && (<div className="relative bg-black h-48 rounded-2xl border border-slate-700 overflow-hidden flex items-center justify-center">
+                      {stream && <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />}
+                      {capturedMedia && !stream && <div className="text-center"><p className="text-xs text-slate-500">Mídia Capturada</p></div>}
+                      <div className="absolute bottom-4 flex gap-4">
+                          {isRecording ? (<button type="button" onClick={handleStopCapture} className="p-4 bg-red-600 rounded-full"><div className="w-4 h-4 bg-white rounded-sm" /></button>) : stream && (<button type="button" onClick={() => {}} className="px-4 py-2 bg-red-600 rounded-full text-xs font-black uppercase">Gravar</button>)}
+                          {stream && mediaAction === 'photo_cap' && (<button type="button" onClick={handleTakePhoto} className="p-4 border-4 border-white rounded-full" />)}
+                      </div>
+                      <button type="button" onClick={resetMedia} className="absolute top-2 right-2 p-2 bg-black/50 rounded-full"><X size={14}/></button>
+                  </div>)}
+
                   <div className="space-y-4">
-                     <input placeholder="Título" value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-slate-800/40 border border-slate-700/50 rounded-xl p-3 text-xs text-white font-bold outline-none" required />
-                     <textarea placeholder="Descrição" value={description} onChange={e => setDescription(e.target.value)} className="w-full bg-slate-800/40 border border-slate-700/50 rounded-xl p-3 text-xs h-16 text-white outline-none" />
-                     <div className="grid grid-cols-2 gap-2">
-                        <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-2"><label className="text-[8px] font-black text-slate-500 uppercase block mb-1">Preço</label><input type="number" value={creditCost} onChange={e => setCreditCost(parseInt(e.target.value))} className="w-full bg-transparent text-sm font-black text-emerald-400 outline-none" /></div>
-                        <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-2"><label className="text-[8px] font-black text-slate-500 uppercase block mb-1">Tempo (s)</label><input type="number" value={duration} onChange={e => setDuration(parseInt(e.target.value))} className="w-full bg-transparent text-sm font-black text-white outline-none" /></div>
-                        <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-2"><label className="text-[8px] font-black text-slate-500 uppercase block mb-1">Auto-Del</label><input type="number" value={expiry} onChange={e => setExpiry(parseInt(e.target.value))} className="w-full bg-transparent text-sm font-black text-red-400 outline-none" placeholder="0" /></div>
-                        <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-2"><label className="text-[8px] font-black text-slate-500 uppercase block mb-1">Repetir</label><input type="number" value={repeatInterval} onChange={e => setRepeatInterval(parseInt(e.target.value))} className="w-full bg-transparent text-sm font-black text-orange-400 outline-none" placeholder="0" /></div>
+                      <input placeholder="Título" value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-slate-800/40 border border-slate-700/50 rounded-xl p-3 text-xs text-white" required />
+                      <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-slate-800/40 p-2 rounded-xl border border-slate-700/50"><label className="text-[8px] uppercase text-slate-500 block">Preço</label><input type="number" value={creditCost} onChange={e => setCreditCost(parseInt(e.target.value))} className="w-full bg-transparent text-sm font-black text-emerald-400 outline-none" /></div>
+                          <div className="bg-slate-800/40 p-2 rounded-xl border border-slate-700/50"><label className="text-[8px] uppercase text-slate-500 block">Tempo (s)</label><input type="number" value={duration} onChange={e => setDuration(parseInt(e.target.value))} className="w-full bg-transparent text-sm font-black text-white outline-none" /></div>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[9px] font-black uppercase text-slate-500"><span>Blur: {blurLevel}%</span></div>
+                        <input type="range" min="0" max="100" value={blurLevel} onChange={e => setBlurLevel(parseInt(e.target.value))} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
                      </div>
                   </div>
 
@@ -556,38 +531,16 @@ const CardModal: React.FC<CardModalProps> = ({ onClose, onSubmit, userId, initia
                 </form>
               </div>
 
-              {/* Preview Section */}
               <div className="hidden lg:flex flex-col flex-1 items-center justify-center bg-black/40 rounded-[2rem] border border-white/5 p-8 relative overflow-hidden">
                  <div className="absolute top-4 left-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Live Preview</div>
                  <div className="pointer-events-none transform scale-110">
-                    <MediaCardItem 
-                      card={previewCard} 
-                      canManage={false} 
-                      onUnlock={() => false} 
-                      isHostMode={false} 
-                    />
+                    <MediaCardItem card={previewCard} canManage={false} onUnlock={() => false} isHostMode={false} />
                  </div>
               </div>
             </div>
           )}
         </div>
-
-        {/* --- SETTINGS MODAL OVERLAY --- */}
-        {showSettings && (
-          <div className="absolute inset-0 bg-[#0f172a] z-50 rounded-[2.5rem] p-8 flex flex-col animate-in slide-in-from-bottom-10">
-             {/* ... (Existing Settings Content) ... */}
-             <div className="flex justify-between items-center mb-8">
-               <h3 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-2"><Settings className="text-slate-500" /> Configuração Padrão</h3>
-               <button onClick={() => setShowSettings(false)} className="p-2 bg-slate-800 rounded-full text-white"><X size={20} /></button>
-             </div>
-             {/* ... simplified for brevity, assume existing settings form here ... */}
-             <div className="flex-1 text-center text-slate-500">
-                 Configurações Globais (Código existente mantido)
-                 <button onClick={() => setShowSettings(false)} className="mt-4 p-2 bg-slate-700 rounded-lg">Fechar</button>
-             </div>
-          </div>
-        )}
-
+        {showSettings && (<div className="absolute inset-0 bg-[#0f172a] z-50 p-8 flex flex-col"><div className="flex justify-between"><h3 className="text-white font-black">Configuração</h3><button onClick={() => setShowSettings(false)}><X className="text-white" /></button></div></div>)}
       </div>
     </div>
   );

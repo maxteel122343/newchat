@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Lock, Play, Volume2, Camera, Phone, MessageSquare, Eye, Clock, Tag, MoreVertical, X, Check, Maximize2, DownloadCloud, Timer, ImageOff, Trash2, Edit, AlertTriangle, LogIn, Link as LinkIcon } from 'lucide-react';
+import { Lock, Play, Volume2, Camera, Phone, MessageSquare, Eye, Clock, Tag, X, Maximize2, Timer, ImageOff, Trash2, Edit, LogIn, Link as LinkIcon } from 'lucide-react';
 import { MediaCard, CardType } from '../types';
 
 interface MediaCardItemProps {
@@ -78,9 +78,8 @@ const MediaCardItem: React.FC<MediaCardItemProps> = ({ card, canManage, onUnlock
       return;
     }
     
-    // Handle potential promise from onUnlock
     const result = onUnlock();
-    const success = result instanceof Promise ? await result : result;
+    const success = (result instanceof Promise) ? await result : result;
 
     if (success) {
       setIsUnlocked(true);
@@ -112,25 +111,6 @@ const MediaCardItem: React.FC<MediaCardItemProps> = ({ card, canManage, onUnlock
       if (onEdit) onEdit(card);
   }
 
-  const handleDownload = async () => {
-    if (!card.mediaUrl) return;
-    try {
-      const response = await fetch(card.mediaUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${card.title.replace(/\s+/g, '_')}_LinkCard.${card.type === CardType.VIDEO ? 'mp4' : 'png'}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch (e) {
-      console.error("Erro ao baixar:", e);
-      window.open(card.mediaUrl, '_blank');
-    }
-  };
-
   const getIcon = () => {
     switch (card.type) {
       case CardType.VIDEO: return <Play size={20} />;
@@ -161,9 +141,18 @@ const MediaCardItem: React.FC<MediaCardItemProps> = ({ card, canManage, onUnlock
   };
 
   const blurPixels = (!isUnlocked && card.isBlur) ? (card.blurLevel || 30) : 0;
-  const imageStyle = { 
+  
+  // Apply blur filter directly via style
+  const imageStyle: React.CSSProperties = { 
     filter: `blur(${blurPixels}px)`,
-    transition: 'filter 0.5s ease-out, transform 0.5s ease'
+    transition: 'filter 0.5s ease-out, transform 0.5s ease',
+    transform: !isUnlocked ? 'scale(1.1)' : 'scale(1)',
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    position: 'absolute',
+    inset: 0,
+    zIndex: 0
   };
 
   const formatExpiry = (seconds: number) => {
@@ -195,7 +184,6 @@ const MediaCardItem: React.FC<MediaCardItemProps> = ({ card, canManage, onUnlock
         alt={card.title}
         style={imageStyle}
         onError={() => setImgError(true)}
-        className={`w-full h-full object-cover absolute inset-0 z-0 ${!isUnlocked ? 'scale-110' : 'scale-100'}`}
       />
     );
   };
@@ -384,7 +372,6 @@ const MediaCardItem: React.FC<MediaCardItemProps> = ({ card, canManage, onUnlock
       <div className="fixed inset-0 z-[9999] bg-black/95 flex flex-col items-center justify-center animate-in fade-in duration-300">
           <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-[100] bg-gradient-to-b from-black/80 to-transparent">
              <div className="flex items-center gap-4">
-               {/* ... (Same header logic) ... */}
                <button 
                  onClick={() => setShowSession(false)}
                  className="p-3 bg-red-600/80 hover:bg-red-600 rounded-full text-white transition-all backdrop-blur-md shadow-lg shadow-red-600/20"
@@ -401,13 +388,10 @@ const MediaCardItem: React.FC<MediaCardItemProps> = ({ card, canManage, onUnlock
               <img src={card.mediaUrl} className="max-w-full max-h-full object-contain shadow-2xl rounded-lg" />
             ) : card.type === CardType.AUDIO && card.mediaUrl ? (
               <div className="text-center p-8 space-y-8 max-w-md w-full">
-                {/* Audio visualization similar to original */}
                 <audio src={card.mediaUrl} autoPlay controls className="w-full" />
               </div>
             ) : (
-              <div className="text-center p-8 space-y-6">
-                 {/* Default content */}
-              </div>
+              <div className="text-center p-8 space-y-6"></div>
             )}
           </div>
         </div>

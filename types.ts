@@ -10,7 +10,7 @@ export enum CardType {
 
 export interface MediaCard {
   id: string;
-  creator_id?: string; // Adicionado para corrigir erro de acesso no ChatRoom
+  creator_id?: string;
   type: CardType;
   title: string;
   description: string;

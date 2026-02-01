@@ -189,7 +189,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ user, updateCredits, openAuth, them
                p_earnings: earnings 
           });
           
-          // Log sales transaction manually for history display
           await supabase.from('sales_transactions').insert([{
               seller_id: privateRoomCard.creator_id,
               buyer_id: user.id,
@@ -266,10 +265,9 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ user, updateCredits, openAuth, them
     const file = e.target.files?.[0];
     if (!file || !user.isLoggedIn) return;
     const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}.${fileExt}`; // Fixed filename for profile to avoid accumulation
+    const fileName = `${user.id}.${fileExt}`;
     const filePath = `profiles/${fileName}`;
     
-    // Use upsert to overwrite existing file
     const { error: uploadError } = await supabase.storage.from('media').upload(filePath, file, { upsert: true });
     
     if (uploadError) {
@@ -278,12 +276,10 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ user, updateCredits, openAuth, them
     }
     
     const { data: { publicUrl } } = supabase.storage.from('media').getPublicUrl(filePath);
-    const publicUrlWithTimestamp = `${publicUrl}?t=${Date.now()}`; // Bust cache
+    const publicUrlWithTimestamp = `${publicUrl}?t=${Date.now()}`;
     
-    // Update Supabase
     await supabase.from('profiles').update({ profile_photo: publicUrlWithTimestamp }).eq('id', user.id);
     
-    // Update local state and force re-render
     user.profilePhoto = publicUrlWithTimestamp;
     setProfileRefresh(prev => prev + 1); 
   };
@@ -292,7 +288,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ user, updateCredits, openAuth, them
     if (!roomId) return;
     
     if (editingCard) {
-        // UPDATE existing message
         const { error } = await supabase.from('messages')
             .update({ card_data: card })
             .contains('card_data', { id: editingCard.id }); 
@@ -310,7 +305,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ user, updateCredits, openAuth, them
         }).eq('id', editingCard.id);
 
     } else {
-        // CREATE new message
         const { error } = await supabase.from('messages').insert([{
           room_id: roomId,
           sender_id: user.id,
@@ -354,7 +348,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ user, updateCredits, openAuth, them
   const handleDeleteCard = async (cardId: string) => {
       const { error } = await supabase.from('messages').delete().contains('card_data', { id: cardId });
       if (error) alert("Erro ao excluir.");
-      // Also try deleting from 'cards' table just in case
       await supabase.from('cards').delete().eq('id', cardId);
   };
 
@@ -362,17 +355,15 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ user, updateCredits, openAuth, them
     if (!withdrawalKey) return alert("Por favor, preencha os dados de pagamento.");
     setWithdrawalPending(true);
     
-    // Save withdrawal request to history
     const { error } = await supabase.from('withdrawals').insert([{
         user_id: user.id,
         amount: user.earnings,
         method: withdrawalMethod,
         target_key: withdrawalKey,
         status: 'pending',
-        estimated_payout_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24h
+        estimated_payout_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
     }]);
 
-    // Save preferences
     const updateData: any = {};
     if (withdrawalMethod === 'pix') updateData.pix_key = withdrawalKey;
     if (withdrawalMethod === 'picpay') updateData.picpay_email = withdrawalKey;
@@ -390,7 +381,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ user, updateCredits, openAuth, them
     setWithdrawalPending(false);
   };
 
-  // ... (Keep existing helpers like addPrivateSession, handleInteractWithCard, etc.) ...
   const addPrivateSession = (cardId: string, title: string) => {
     const sessionId = `priv-${cardId}`;
     if (!sessions.find(s => s.id === sessionId)) {
@@ -414,7 +404,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ user, updateCredits, openAuth, them
          if (cardData && cardData.creator_id) {
              await supabase.rpc('process_card_purchase', { p_card_id: card.id, p_buyer_id: user.id, p_creator_id: cardData.creator_id, p_amount: card.creditCost, p_earnings: earnings });
              
-             // Log transaction for frontend history
              await supabase.from('sales_transactions').insert([{
                  seller_id: cardData.creator_id,
                  buyer_id: user.id,
@@ -451,7 +440,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ user, updateCredits, openAuth, them
     setInputText('');
   };
 
-  // Quick Action functions
   const handleQuickUpload = (e: React.ChangeEvent<HTMLInputElement>) => { /* ... existing ... */ };
   const startQuickRecording = async (type: any) => { /* ... existing ... */ };
   const stopQuickRecording = () => { /* ... existing ... */ };
@@ -476,7 +464,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ user, updateCredits, openAuth, them
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Camera size={20} className="text-white" /></div>
             <input type="file" ref={fileInputRef} onChange={handlePhotoUpload} className="hidden" accept="image/*" />
             </div>
-            {/* Earnings Icon in Sidebar - Re-added for visibility */}
             {user.isLoggedIn && (
                 <button onClick={() => setShowEarningsModal(true)} className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col items-center justify-center text-emerald-500 hover:bg-emerald-500/20 transition-all cursor-pointer">
                     <DollarSign size={20} />
@@ -517,7 +504,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ user, updateCredits, openAuth, them
       
       <main className={`flex-1 flex flex-col relative ${colors.bg}`}>
         <header className={`h-[64px] border-b ${colors.border} flex items-center justify-between px-4 md:px-6 ${colors.headerBg} backdrop-blur-md`}>
-          {/* Header Content */}
           <div className="flex items-center gap-3">
             <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"><Menu size={20} className={colors.textHighlight} /></button>
             <button onClick={() => navigate('/')} className={`p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg ${colors.text}`}><Home size={20} /></button>
@@ -526,7 +512,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ user, updateCredits, openAuth, them
           <div className="flex items-center gap-2 md:gap-3">
             <button onClick={toggleTheme} className={`p-2 rounded-xl border ${colors.border} ${colors.text} hover:opacity-70 transition-all`}>{isDark ? <Sun size={18} /> : <Moon size={18} />}</button>
             <div onClick={() => setShowQrCode(true)} className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 text-emerald-500 text-xs border border-emerald-500/20 font-black cursor-pointer hover:bg-emerald-500/20 transition-all`}><Wallet size={16} /><span>{user.credits} c</span></div>
-            {/* Added Earnings Icon to Header for ease of access */}
             {user.isLoggedIn && (
                 <button onClick={() => setShowEarningsModal(true)} className="flex sm:hidden items-center gap-2 px-3 py-2 bg-emerald-500/10 text-emerald-500 rounded-xl border border-emerald-500/20 font-black">
                     <DollarSign size={16} />
